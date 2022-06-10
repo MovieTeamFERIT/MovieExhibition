@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>login site</title>
+    
+    <link rel="stylesheet" href="login_style.css" />
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://kit.fontawesome.com/71a0db1836.js" crossorigin="anonymous"></script>
+    
+</head>
+
+<body>
+    <nav>
+        <ul>
+            <li class="logo">Movie Exhibition</li>
+            <div class="items">
+                <li><a class="a" id="home" href="index.html">Home</a></li>
+                <li><a class="a" id="favouritelink" href="favorites.html">Favourite movies</a></li>
+                <li><a class="a" id="userlink" href="register.html">Username</a></li>
+                <li><a class="a active" id="signoutlink">Sign out</a></li>
+            </div>
+            <li class="search-icon" id="search_icon">
+                <input type="search" id="search" placeholder="Search movies..." autocomplete="off" />
+                <label class="icon">
+                    <span class="fas fa-search"></span>
+                </label>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="box">
+        <div class="mb-5">
+            <h3 class="mb-3">LOGIN</h3>
+            <input type="text" placeholder="Username" id="userInp" class="inp">
+            <input type="password" placeholder="Password" id="passInp" class="inp">
+            <div class="custom-control custom-switch mb-3">
+                <input type="checkbox" class="custom-control-input" id="customSwitch1">
+                <label class="custom-control-label" for="customSwitch1">Keep me logged in</label>
+            </div>
+            <button type="text" id="sub_btn" class="btn">Sign in</button>
+            <div id="new_acc_div"><a href="register.html" id="new_acc" >Want to create a new account?</a></div>
+        </div>
+    </div>
+    
+
+    <script type="module">
+        //--------FIREBASE CONFIG-----------//
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.8.0/firebase-app.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAomaWQ5Ca3mTAYJzrNym57C0IbF6kjLEI",
+            authDomain: "movieexplorer2-5a311.firebaseapp.com",
+            databaseURL: "https://movieexplorer2-5a311-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "movieexplorer2-5a311",
+            storageBucket: "movieexplorer2-5a311.appspot.com",
+            messagingSenderId: "704971063861",
+            appId: "1:704971063861:web:c34302a28e03ed5eb8677c"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+
+        import { getDatabase, ref, set, child, get } from "https://www.gstatic.com/firebasejs/9.8.0/firebase-database.js"
+
+        const db = getDatabase();
+
+        //-----references-----//
+        const username = document.getElementById('userInp');
+        const pass = document.getElementById('passInp');
+        const submit = document.getElementById('sub_btn');
+        const create = document.getElementById('create_btn');
+
+        //----authentification process---//
+        function AuthenticateUser() {
+            const dbref = ref(db);
+
+            get(child(dbref, "UsersList/" + username.value)).then((snapshot) => {
+                if (snapshot.exists()) {
+                    let dbpass = decPass(snapshot.val().password);
+                    if (dbpass == pass.value) {
+                        login(snapshot.val());
+                    }
+                    else{
+                        alert("Korisnik ne postoji!");
+                    }
+                }
+                else {
+                    alert("Korisnicko ime ili lozinka su netocni!");
+                }
+            });
+        }
+        //----DECRIPTION---//
+        function decPass(dbpass) {
+            var pass12 = CryptoJS.AES.decrypt(dbpass, pass.value);
+            return pass12.toString(CryptoJS.enc.Utf8);
+        }
+
+        //-----LOGIN----//
+        function login(user){
+            let keepLoggedIn = document.getElementById('customSwitch1').checked;
+
+            if(!keepLoggedIn){
+                sessionStorage.setItem('user', JSON.stringify(user));
+                console.log("User logiran:" + user);
+                window.location="index.html";
+            }
+            else{
+                localStorage.setItem('keepLoggedIn','yes');
+                localStorage.setItem('user', JSON.stringify(user));
+                console.log("User logiran:" + user);
+                window.location="index.html";
+            }
+        }
+        
+        function registerPage(){
+            window.location = "register.html"
+        }
+        //-------EVENTLISTENERI----///
+        submit.addEventListener('click', AuthenticateUser)
+        create.addEventListener('click', registerPage)
+    </script>
+    <script>
+        //---REFERENCES---//
+        let userlink = document.getElementById('userlink');
+        let signoutlink = document.getElementById('signoutlink');
+        
+        var currentUser = null;
+
+        //---FUNCTIONS---//
+        function getUsername(){
+            let keepLoggedIn = localStorage.getItem("keepLoggedIn");
+
+            if(keepLoggedIn == "yes"){
+                currentUser = JSON.parse(localStorage.getItem('user'));
+            }
+            else{
+                currentUser = JSON.parse(sessionStorage.getItem('user'));
+            }
+        }
+
+        //---WINDOW LOADS---//
+        window.onload = function(){
+            getUsername();
+            console.log("User logiran:" + currentUser);
+            if(currentUser == null){
+                userlink.innerText="Create new account";
+                userlink.classList.replace("nav-link","btn");
+                userlink.classList.add("btn-primary");
+                userlink.href = "register.html";
+
+                signoutlink.innerText="Login";
+                signoutlink.classList.replace("nav-link","btn");
+                signoutlink.classList.add("btn-success");
+                signoutlink.href = "login.html";
+
+                favouritelink.style.display = "none";
+
+            }
+            else{
+                userlink.innerText=currentUser.username;
+                userlink.classList.replace("btn","nav-link");
+                userlink.classList.remove("btn-primary");
+                userlink.href = "#";
+
+                signoutlink.innerText="Sign out";
+                signoutlink.classList.replace("btn","nav-link");
+                signoutlink.classList.remove("btn-success");
+                signoutlink.href = "signout.html";
+
+                favouritelink.style.display = "block";
+            }
+        }
+
+        
+    </script>
+</body>
+
+</html>
