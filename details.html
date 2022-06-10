@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="details_style.css" type="text/css" />
+    <script src="https://kit.fontawesome.com/71a0db1836.js" crossorigin="anonymous"></script>
+    <title>Detail</title>
+  </head>
+  <body>
+    <nav>
+        <ul>
+            <li class="logo">Movie Exhibition</li>
+            <div class="items">
+                <li><a href="index.html">Home</a></li>
+                <li><a id="favouritelink" href="favorites.html">Favourite movies</a></li>
+                <li><a id="userlink">Username</a></li>
+                <li><a id="signoutlink">Sign out</a></li>
+            </div>
+            <li class="search-icon" id="search_icon">
+                <input type="search" id="search" placeholder="Search movies..." autocomplete="off" />
+                <label class="icon">
+                    <span class="fas fa-search"></span>
+                </label>
+            </li>
+        </ul>
+    </nav>
+
+    <section class="sec">
+      <div class="movie-description">
+        <div id="original_title">  </div>
+        <div id="description">Description:</div>
+        <p id="overview_details"></p>
+        <div id="release">Release date:</div><div id="release_date"></div>
+        <a href="#" id="btn_addFav" class="btn active"></a>
+      </div>
+      <div class="movie-img">
+        <img id="myImageID" src="" alt="" />
+      </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="script_details.js"></script>
+    <script type="module">
+      //--------FIREBASE CONFIG-----------//
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.8.0/firebase-app.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAomaWQ5Ca3mTAYJzrNym57C0IbF6kjLEI",
+            authDomain: "movieexplorer2-5a311.firebaseapp.com",
+            databaseURL: "https://movieexplorer2-5a311-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "movieexplorer2-5a311",
+            storageBucket: "movieexplorer2-5a311.appspot.com",
+            messagingSenderId: "704971063861",
+            appId: "1:704971063861:web:c34302a28e03ed5eb8677c"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+
+        import { getFirestore, arrayUnion, arrayRemove, doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteDoc, deleteField} from "https://www.gstatic.com/firebasejs/9.8.0/firebase-firestore.js";
+        const db_favorites = getFirestore();
+
+        var link = window.location.href;
+        var newLink = new URL(link);
+        const movieID = newLink.searchParams.get("movieId");
+        //alert("Movie ID je: " + movieID);
+
+        let addfavlink = document.getElementById('btn_addFav');
+        let favouritelink = document.getElementById('favouritelink');
+
+        //---DODAVANJE U FIRESTORE---//
+        async function AddDocument_CustomID(){
+            if(currentUser == null){
+                alert("Niti jedan korisnik nije ulogiran!");
+            }
+            else{
+                var ref = doc(db_favorites, "users", currentUser.username);
+
+                const docRef = await updateDoc(
+                    ref, {
+                        favorites: arrayUnion(movieID)
+                    }
+                )
+                .then(()=>{
+                    //alert("Dodano u favorite za korisnika: " + currentUser.username);
+                })
+                .catch((error)=>{
+                    alert("Dogodio se error, ERROR: " + error);
+                });
+            }
+            location.reload();
+        }
+        //--BRISANJE IZ FIRESTORA--//
+        async function DeleteDocument_CustomID(){
+            if(currentUser == null){
+                alert("Niti jedan korisnik nije ulogiran!");
+            }
+            else{
+                var ref = doc(db_favorites, "users", currentUser.username);
+
+                const docRef = await updateDoc(
+                    ref, {
+                        favorites: arrayRemove(movieID)
+                    }
+                )
+                .then(()=>{
+                    //alert("Izbrisano iz favorita za korisnika: " + currentUser.username);
+                })
+                .catch((error)=>{
+                    alert("Dogodio se error, ERROR: " + error);
+                });
+            }
+            location.reload();
+        }
+        //--DODAVANJE EVENATA GUMBOVIMA--//
+        async function getAllDataOnce(){
+            if(currentUser == null){
+                console.log("korisnik nije logiran");
+                return;
+            }
+            else{
+                const docRef = doc(db_favorites, "users", currentUser.username);
+                const docSnap = await getDoc(docRef);
+                var favorite_movies = [];
+                let isFavorite = 0;
+                if(docSnap.exists()){
+                    console.log("Document data:", docSnap.data());
+                    favorite_movies = docSnap.data().favorites;
+                    console.log("Favorite movies: " + favorite_movies);
+                    console.log(favorite_movies.length);
+                    for (let i = 0; i < favorite_movies.length; i++){
+                        if(favorite_movies[i] == movieID){
+                            isFavorite = 1;
+                        }
+                    }
+                    if(isFavorite == 1){
+                        console.log("Film je vec dodan u favorite!");
+                        addfavlink.className = "btn active";
+                        console.log(addfavlink.className);
+                        addfavlink.innerHTML = "<span>Izbrisi iz favorita!</span>"
+                        console.log(addfavlink.innerHTML);
+                        addfavlink.addEventListener('click', DeleteDocument_CustomID);
+                    }
+                    else{
+                        console.log("Film nije dodan u favorite!");
+                        addfavlink.className = "btn";
+                        console.log(addfavlink.className);
+                        addfavlink.innerHTML = "<span>Dodaj u favorite!</span>"
+                        console.log(addfavlink.innerHTML);
+                        addfavlink.addEventListener('click', AddDocument_CustomID);
+                    }
+                    
+                } else {
+                    console.log("No such document!");
+                }
+            }
+        }
+        
+
+        //---REFERENCES---//
+      let userlink = document.getElementById('userlink');
+      let signoutlink = document.getElementById('signoutlink');
+      let favlink = document.getElementById('btn_addFav');
+
+      var currentUser = null;
+
+      //---FUNCTIONS---//
+      function getUsername(){
+          let keepLoggedIn = localStorage.getItem("keepLoggedIn");
+
+          if(keepLoggedIn == "yes"){
+              currentUser = JSON.parse(localStorage.getItem('user'));
+          }
+          else{
+              currentUser = JSON.parse(sessionStorage.getItem('user'));
+          }
+      }
+
+      function signOut(){
+          sessionStorage.removeItem('user');
+          localStorage.removeItem('user');
+          localStorage.removeItem('keepLoggedIn');
+          window.location = "index.html";
+      }
+
+      
+      //---WINDOW LOADS---//
+      window.onload = function(){
+          getUsername();
+          getAllDataOnce();
+          console.log("User logiran:" + currentUser);
+          if(currentUser == null){
+                userlink.innerText="Create new account";
+                userlink.classList.replace("nav-link","btn");
+                userlink.classList.add("btn-primary");
+                userlink.href = "register.html";
+
+                signoutlink.innerText="Login";
+                signoutlink.classList.replace("nav-link","btn");
+                signoutlink.classList.add("btn-success");
+                signoutlink.href = "login.html";
+
+                favouritelink.style.display = "none";
+                favlink.style.display = "none";
+          }
+          else{
+                userlink.innerText=currentUser.username;
+                userlink.classList.replace("btn","nav-link");
+                userlink.classList.remove("btn-primary");
+                userlink.href = "#";
+
+                signoutlink.innerText="Sign out";
+                signoutlink.classList.replace("btn","nav-link");
+                signoutlink.classList.remove("btn-success");
+                signoutlink.href = "signout.html";
+
+                favouritelink.style.display = "block";
+                favlink.style.display = "block";
+          }
+      }
+  </script>
+  </body>
+</html>

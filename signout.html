@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" type="text/css" />
+    <script src="https://kit.fontawesome.com/71a0db1836.js" crossorigin="anonymous"></script>
+    <title>Detail</title>
+  </head>
+  <body>
+    <nav>
+        <ul>
+            <li class="logo">Movie Exhibition</li>
+            <div class="items">
+                <li><a href="index.html">Home</a></li>
+                <li><a id="favouritelink" href="favorites.html">Favourite movies</a></li>
+                <li><a id="userlink">Username</a></li>
+                <li><a id="signoutlink">Sign out</a></li>
+            </div>
+            <li class="search-icon" id="search_icon">
+                <input type="search" id="search" placeholder="Search movies..." autocomplete="off" />
+                <label class="icon">
+                    <span class="fas fa-search"></span>
+                </label>
+            </li>
+        </ul>
+    </nav>
+
+    <div id="signout_text">Uspjesno ste odjavljeni...</div>
+
+    <script>
+        var currentUser = null;
+
+        window.onload = function(){
+            getUsername();
+            setTimeout(
+             function()
+             {
+                sessionStorage.removeItem('user');
+                localStorage.removeItem('user');
+                localStorage.removeItem('keepLoggedIn');
+                window.location = "index.html";
+             },
+             3000
+            );
+            console.log("User logiran:" + currentUser);
+            if(currentUser == null){
+                userlink.innerText="Create new account";
+                userlink.classList.replace("nav-link","btn");
+                userlink.classList.add("btn-primary");
+                userlink.href = "register.html";
+
+                signoutlink.innerText="Login";
+                signoutlink.classList.replace("nav-link","btn");
+                signoutlink.classList.add("btn-success");
+                signoutlink.href = "login.html";
+
+                favouritelink.style.display = "none";
+
+            }
+            else{
+                userlink.innerText=currentUser.username;
+                userlink.classList.replace("btn","nav-link");
+                userlink.classList.remove("btn-primary");
+                userlink.href = "#";
+
+                signoutlink.innerText="Sign out";
+                signoutlink.classList.replace("btn","nav-link");
+                signoutlink.classList.remove("btn-success");
+                signoutlink.href = "javascript:signOut()";
+
+                favouritelink.style.display = "block";
+            }
+        }
+        
+        
+
+        //---FUNCTIONS---//
+        function getUsername(){
+            let keepLoggedIn = localStorage.getItem("keepLoggedIn");
+
+            if(keepLoggedIn == "yes"){
+                currentUser = JSON.parse(localStorage.getItem('user'));
+            }
+            else{
+                currentUser = JSON.parse(sessionStorage.getItem('user'));
+            }
+        }
+    </script>
+</body>
+
+</html>

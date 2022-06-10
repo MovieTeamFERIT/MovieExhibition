@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register site</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="https://kit.fontawesome.com/71a0db1836.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="register_style.css" />
+</head>
+
+<body>
+    <nav>
+        <ul>
+            <li class="logo">Movie Exhibition</li>
+            <div class="items">
+                <li><a class="a" id="home" href="index.html">Home</a></li>
+                <li><a class="a" id="favouritelink" href="favorites.html">Favourite movies</a></li>
+                <li><a class="a active" id="userlink" href="register.html">Username</a></li>
+                <li><a class="a" id="signoutlink">Sign out</a></li>
+            </div>
+            <li class="search-icon" id="search_icon">
+                <input type="search" id="search" placeholder="Search movies..." autocomplete="off" />
+                <label class="icon">
+                    <span class="fas fa-search"></span>
+                </label>
+            </li>
+        </ul>
+    </nav>
+    <div class="box">
+        <div class="mb-5">
+            <h3 class="mb-3">SIGN UP</h3>
+            <input type="text" placeholder="Fullname" id="nameInp" class="inp">
+            <input type="text" placeholder="Email" id="emailInp" class="inp">
+            <input type="text" placeholder="Username" id="userInp" class="inp">
+            <input type="password" placeholder="Password" id="passInp" class="inp">
+            <button type="text" id="sub_btn" class="btn">SIGN UP</button>
+            <div id="new_acc_div"><a href="login.html" id="new_acc" >Already have an account?</a></div>
+        </div>
+    </div>
+    <script type="module">
+        //--------FIREBASE CONFIG-----------//
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.8.0/firebase-app.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAomaWQ5Ca3mTAYJzrNym57C0IbF6kjLEI",
+            authDomain: "movieexplorer2-5a311.firebaseapp.com",
+            databaseURL: "https://movieexplorer2-5a311-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "movieexplorer2-5a311",
+            storageBucket: "movieexplorer2-5a311.appspot.com",
+            messagingSenderId: "704971063861",
+            appId: "1:704971063861:web:c34302a28e03ed5eb8677c"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+
+        import { getDatabase, ref, set, child, get} from "https://www.gstatic.com/firebasejs/9.8.0/firebase-database.js";
+        import { getFirestore, arrayUnion, arrayRemove, doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteDoc, deleteField} from "https://www.gstatic.com/firebasejs/9.8.0/firebase-firestore.js";
+        const db = getDatabase();
+        const db_favorites = getFirestore();
+
+        //-----references-----//
+        const name = document.getElementById('nameInp');
+        const email = document.getElementById('emailInp');
+        const username = document.getElementById('userInp');
+        const pass = document.getElementById('passInp');
+        const submit = document.getElementById('sub_btn');
+
+        ////-----VALIDATION----//
+        function Validation() {
+            let nameregex = /^[a-zA-Z]+$/;
+            let emailregex = /^[a-zA-Z0-9]+@(gmail|yahoo|outlook|hotmail)\.com$/;
+            let userregex = /^[a-zA-Z0-9]{5,}$/;
+
+            if (!nameregex.test(name.value)) {
+                alert("Ime mora sadrzavati samo slova abecede!");
+                return false;
+            }
+            if (!emailregex.test(email.value)) {
+                alert("Upisite tocan e-mail!");
+                return false;
+            }
+            if (!userregex.test(username.value)) {
+                alert("Korisnicko ime moze biti iskljucivo alfanumericko\nMora biti minimalno 5 znakova dugacko i ne smije sadrzavati razmake!");
+                return false;
+            }
+            return true;
+        }
+
+        function RegisterUser() {
+            if (!Validation()) {
+                return;
+            };
+            const dbRef = ref(db);
+
+            get(child(dbRef, "UsersList/" + username.value)).then((snapshot) => {
+                if (snapshot.exists()) {
+                    alert("Racun vec postoji!");
+                }
+                else {
+                    set(ref(db, "UsersList/" + username.value), {
+                        fullname: name.value,
+                        email: email.value,
+                        username: username.value,
+                        password: encPass()
+                    })
+                        .then(() => {
+                            alert("Korisnik uspjesno dodan!");
+                        })
+                        .catch((error) => {
+                            alert("Error" + error);
+                        })
+                }
+            })
+            AddDocument_CustomID();
+        }
+
+        //---DODAVANJE U FIRESTORE---//
+        async function AddDocument_CustomID(){
+                var ref = doc(db_favorites, "users", username.value);
+
+                const docRef = await setDoc(
+                    ref, {
+                        favorites: arrayUnion()
+                    }
+                )
+                .then(()=>{
+                    alert("Korisnik je uspjesno dodan i u firestore!");
+                })
+                .catch((error)=>{
+                    alert("Dogodio se error, ERROR: " + error);
+                })
+            }
+        //----ENCRIPTION---//
+        function encPass() {
+            var pass12 = CryptoJS.AES.encrypt(pass.value, pass.value);
+            return pass12.toString();
+        }
+        //-------EVENTLISTENERI----///
+        submit.addEventListener('click', RegisterUser)
+    </script>
+    <script>
+        //---REFERENCES---//
+        let userlink = document.getElementById('userlink');
+        let signoutlink = document.getElementById('signoutlink');
+        
+        var currentUser = null;
+
+        //---FUNCTIONS---//
+        function getUsername(){
+            let keepLoggedIn = localStorage.getItem("keepLoggedIn");
+
+            if(keepLoggedIn == "yes"){
+                currentUser = JSON.parse(localStorage.getItem('user'));
+            }
+            else{
+                currentUser = JSON.parse(sessionStorage.getItem('user'));
+            }
+        }
+
+        //---WINDOW LOADS---//
+        window.onload = function(){
+            getUsername();
+            console.log("User logiran:" + currentUser);
+            if(currentUser == null){
+                userlink.innerText="Create new account";
+                userlink.classList.replace("nav-link","btn");
+                userlink.classList.add("btn-primary");
+                userlink.href = "register.html";
+
+                signoutlink.innerText="Login";
+                signoutlink.classList.replace("nav-link","btn");
+                signoutlink.classList.add("btn-success");
+                signoutlink.href = "login.html";
+
+                favouritelink.style.display = "none";
+
+            }
+            else{
+                userlink.innerText=currentUser.username;
+                userlink.classList.replace("btn","nav-link");
+                userlink.classList.remove("btn-primary");
+                userlink.href = "#";
+
+                signoutlink.innerText="Sign out";
+                signoutlink.classList.replace("btn","nav-link");
+                signoutlink.classList.remove("btn-success");
+                signoutlink.href = "signout.html";
+
+                favouritelink.style.display = "block";
+            }
+        }
+
+        
+    </script>
+</body>
+
+</html>

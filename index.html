@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Movie Exhibition</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="script_home.js" defer></script>
+    <script src="https://kit.fontawesome.com/71a0db1836.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <nav>
+        <ul>
+            <li class="logo">Movie Exhibition</li>
+            <div class="items">
+                <li><a class="a active" id="home" href="#">Home</a></li>
+                <li><a class="a" id="favouritelink" href="favorites.html">Favourite movies</a></li>
+                <li><a class="a" id="userlink">Username</a></li>
+                <li><a class="a" id="signoutlink">Sign out</a></li>
+            </div>
+            <li class="search-icon">
+                <input type="search" id="search" placeholder="Search movies..." autocomplete="off" />
+                <label class="icon" id="search_icon">
+                    <span class="fas fa-search"></span>
+                </label>
+            </li>
+        </ul>
+    </nav>
+
+    <h2 id="search_res"></h2>
+    <p id="total_records"></p>
+    <main id="main">
+        <div class="movie">
+        </div>
+    </main>
+
+    <script type="module">
+        //--------FIREBASE CONFIG-----------//
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.8.0/firebase-app.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAomaWQ5Ca3mTAYJzrNym57C0IbF6kjLEI",
+            authDomain: "movieexplorer2-5a311.firebaseapp.com",
+            databaseURL: "https://movieexplorer2-5a311-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "movieexplorer2-5a311",
+            storageBucket: "movieexplorer2-5a311.appspot.com",
+            messagingSenderId: "704971063861",
+            appId: "1:704971063861:web:c34302a28e03ed5eb8677c"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+
+        import { getFirestore, arrayUnion, arrayRemove, doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteDoc, deleteField} from "https://www.gstatic.com/firebasejs/9.8.0/firebase-firestore.js";
+        const db_favorites = getFirestore();
+
+    </script>
+    <script>
+        //---REFERENCES---//
+        let userlink = document.getElementById('userlink');
+        let signoutlink = document.getElementById('signoutlink');
+        
+        var currentUser = null;
+
+        //---FUNCTIONS---//
+        function getUsername(){
+            let keepLoggedIn = localStorage.getItem("keepLoggedIn");
+
+            if(keepLoggedIn == "yes"){
+                currentUser = JSON.parse(localStorage.getItem('user'));
+            }
+            else{
+                currentUser = JSON.parse(sessionStorage.getItem('user'));
+            }
+        }
+
+        function signOut(){
+            sessionStorage.removeItem('user');
+            localStorage.removeItem('user');
+            localStorage.removeItem('keepLoggedIn');
+            window.location = "index.html";
+        }
+
+        
+        //---WINDOW LOADS---//
+        window.onload = function(){
+            getUsername();
+            console.log("User logiran:" + currentUser);
+            if(currentUser == null){
+                userlink.innerText="Create new account";
+                userlink.classList.replace("nav-link","btn");
+                userlink.classList.add("btn-primary");
+                userlink.href = "register.html";
+
+                signoutlink.innerText="Login";
+                signoutlink.classList.replace("nav-link","btn");
+                signoutlink.classList.add("btn-success");
+                signoutlink.href = "login.html";
+
+                favouritelink.style.display = "none";
+
+            }
+            else{
+                userlink.innerText=currentUser.username;
+                userlink.classList.replace("btn","nav-link");
+                userlink.classList.remove("btn-primary");
+                userlink.href = "#";
+
+                signoutlink.innerText="Sign out";
+                signoutlink.classList.replace("btn","nav-link");
+                signoutlink.classList.remove("btn-success");
+                signoutlink.href = "signout.html";
+
+                favouritelink.style.display = "block";
+            }
+        }
+
+        
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Movie Exhibition</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://kit.fontawesome.com/71a0db1836.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <nav>
+        <ul>
+            <li class="logo">Movie Exhibition</li>
+            <div class="items">
+                <li><a class="a" id="home" href="index.html">Home</a></li>
+                <li><a class="a active" id="favouritelink" href="#">Favourite movies</a></li>
+                <li><a class="a" id="userlink">Username</a></li>
+                <li><a class="a" id="signoutlink">Sign out</a></li>
+            </div>
+            <li class="search-icon" id="search_icon">
+                <input type="search" id="search" placeholder="Search movies..." autocomplete="off" />
+                <label class="icon">
+                    <span class="fas fa-search"></span>
+                </label>
+            </li>
+        </ul>
+    </nav>
+
+    <h2 id="search_res"></h2>
+    <p id="total_records"></p>
+    <main id="main">
+        <div class="movie">
+        </div>
+    </main>
+
+    <script type="module">
+        //--------FIREBASE CONFIG-----------//
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.8.0/firebase-app.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAomaWQ5Ca3mTAYJzrNym57C0IbF6kjLEI",
+            authDomain: "movieexplorer2-5a311.firebaseapp.com",
+            databaseURL: "https://movieexplorer2-5a311-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "movieexplorer2-5a311",
+            storageBucket: "movieexplorer2-5a311.appspot.com",
+            messagingSenderId: "704971063861",
+            appId: "1:704971063861:web:c34302a28e03ed5eb8677c"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+
+        import { getFirestore, arrayUnion, arrayRemove, doc, getDoc, setDoc, collection, addDoc, updateDoc, deleteDoc, deleteField} from "https://www.gstatic.com/firebasejs/9.8.0/firebase-firestore.js";
+        const db_favorites = getFirestore();
+
+        const IMG_URL = 'https://image.tmdb.org/t/p/w500';
+        
+        function getFavouriteMovies(url){
+            fetch(url).then(res => res.json()).then ((data) => {
+                console.log("Data results are: " + data)
+                showFavoriteMovies(data);
+            })
+        }
+
+        function showFavoriteMovies(data){
+            
+            console.log(data);
+            const id = data.id;
+            const title = data.title;
+            const poster_path = data.poster_path;
+            const vote_average = data.vote_average;
+            const overview = data.overview;
+
+            const movieEl = document.createElement('div');
+            movieEl.classList.add('movie');
+            movieEl.innerHTML = `
+            <img src="${IMG_URL+poster_path}" alt="${title}">
+            <div class="movie-info">
+                <h3>${title}</h3>
+                <span class="green">${vote_average}</span>
+            </div>
+            <div class="overview">
+                <h3>Overview</h3>
+                ${overview}
+            </div>
+            `
+            main.appendChild(movieEl);
+            movieEl.setAttribute("id", id);
+            let red = document.getElementById(id);
+
+            red.addEventListener("click", () => {
+                window.location =
+                "details.html?movieId=" + id;
+            });
+
+        }
+
+
+        async function getAllDataOnce(){
+            if(currentUser == null){
+                alert("Niti jedan korisnik nije ulogiran!");
+            }
+            else{
+                const docRef = doc(db_favorites, "users", currentUser.username);
+                const docSnap = await getDoc(docRef);
+                var favorite_movies = [];
+                if(docSnap.exists()){
+                    console.log("Document data:", docSnap.data());
+                    favorite_movies = docSnap.data().favorites;
+                    console.log("Favorite movies: " + favorite_movies);
+                    console.log(favorite_movies.length);
+                    for (let i = 0; i < favorite_movies.length; i++){
+                        var movieID_URL = 'https://api.themoviedb.org/3/movie/' + favorite_movies[i] + '?api_key=04c35731a5ee918f014970082a0088b1';
+                        console.log(favorite_movies[i]);
+                        console.log(movieID_URL);
+                        main.innerHTML = '';
+                        getFavouriteMovies(movieID_URL);
+                    }
+                } else {
+                    console.log("No such document!");
+                }
+            }
+        }
+
+                //---REFERENCES---//
+        let userlink = document.getElementById('userlink');
+        let signoutlink = document.getElementById('signoutlink');
+        
+        var currentUser = null;
+
+        //---FUNCTIONS---//
+        function getUsername(){
+            let keepLoggedIn = localStorage.getItem("keepLoggedIn");
+
+            if(keepLoggedIn == "yes"){
+                currentUser = JSON.parse(localStorage.getItem('user'));
+            }
+            else{
+                currentUser = JSON.parse(sessionStorage.getItem('user'));
+            }
+        }
+
+        function signOut(){
+            sessionStorage.removeItem('user');
+            localStorage.removeItem('user');
+            localStorage.removeItem('keepLoggedIn');
+            window.location = "index.html";
+        }
+
+        
+        //---WINDOW LOADS---//
+        window.onload = function(){
+            getUsername();
+            getAllDataOnce();
+            console.log("User logiran:" + currentUser);
+            if(currentUser == null){
+                userlink.innerText="Create new account";
+                userlink.classList.replace("nav-link","btn");
+                userlink.classList.add("btn-primary");
+                userlink.href = "register.html";
+
+                signoutlink.innerText="Login";
+                signoutlink.classList.replace("nav-link","btn");
+                signoutlink.classList.add("btn-success");
+                signoutlink.href = "login.html";
+
+                favouritelink.style.display = "none";
+
+            }
+            else{
+                userlink.innerText=currentUser.username;
+                userlink.classList.replace("btn","nav-link");
+                userlink.classList.remove("btn-primary");
+                userlink.href = "#";
+
+                signoutlink.innerText="Sign out";
+                signoutlink.classList.replace("btn","nav-link");
+                signoutlink.classList.remove("btn-success");
+                signoutlink.href = "signout.html";
+
+                favouritelink.style.display = "block";
+            }
+        }
+        
+        
+
+    </script>
+    <script>
+        /*//---REFERENCES---//
+        let userlink = document.getElementById('userlink');
+        let signoutlink = document.getElementById('signoutlink');
+        
+        var currentUser = null;
+
+        //---FUNCTIONS---//
+        function getUsername(){
+            let keepLoggedIn = localStorage.getItem("keepLoggedIn");
+
+            if(keepLoggedIn == "yes"){
+                currentUser = JSON.parse(localStorage.getItem('user'));
+            }
+            else{
+                currentUser = JSON.parse(sessionStorage.getItem('user'));
+            }
+        }
+
+        function signOut(){
+            sessionStorage.removeItem('user');
+            localStorage.removeItem('user');
+            localStorage.removeItem('keepLoggedIn');
+            window.location = "index.html";
+        }
+
+        
+        //---WINDOW LOADS---//
+        window.onload = function(){
+            getUsername();
+            console.log("User logiran:" + currentUser);
+            if(currentUser == null){
+                userlink.innerText="Create new account";
+                userlink.classList.replace("nav-link","btn");
+                userlink.classList.add("btn-primary");
+                userlink.href = "register.html";
+
+                signoutlink.innerText="Login";
+                signoutlink.classList.replace("nav-link","btn");
+                signoutlink.classList.add("btn-success");
+                signoutlink.href = "login.html";
+
+                favouritelink.style.display = "none";
+
+            }
+            else{
+                userlink.innerText=currentUser.username;
+                userlink.classList.replace("btn","nav-link");
+                userlink.classList.remove("btn-primary");
+                userlink.href = "#";
+
+                signoutlink.innerText="Sign out";
+                signoutlink.classList.replace("btn","nav-link");
+                signoutlink.classList.remove("btn-success");
+                signoutlink.href = "javascript:signOut()";
+
+                favouritelink.style.display = "block";
+            }
+        }
+        */
+    </script>
+</body>
+
+</html>
